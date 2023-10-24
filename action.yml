@@ -1,0 +1,18 @@
+# action.yml
+name: 'MNG: Docker Clock GHA'
+description: 'Greet someone and record the time'
+inputs:
+  action_greeter:  # id of input
+    description: 'Who to greet'
+    required: true
+    default: 'Default Greeter By Action'
+outputs:
+  time: # id of output
+    description: 'The time we greeted you'
+  greeter:
+    description: 'Greeter Name'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.action_greeter }}
