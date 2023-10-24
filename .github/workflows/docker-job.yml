@@ -1,0 +1,149 @@
+name: "GitHub Docker Job/Step Demo"
+run-name: "GitHub Docker Job/Step Demo on ${{ github.actor }}"
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Message to send"
+        required: true
+        default: "Default Message"
+        type: string
+      workflow_greeter:
+        description: "Message to send"
+        required: true
+        default: "Hello"
+        type: string
+jobs:
+  get-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get source
+        uses: actions/checkout@v3
+
+  native-job:
+    needs: get-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: get source
+        uses: actions/checkout@v3
+      - name: Docker check
+        run: ./script/docker-check.sh
+        
+  docker-job:
+    needs: get-source
+    runs-on: ubuntu-latest
+    container: node:latest
+    env:
+      NODE_ENV: gha-test
+    steps:
+      - name: get source
+        uses: actions/checkout@v3
+      - name: Docker check
+        run: ./script/docker-check.sh
+        
+  docker-job-myaction-in-packages:
+    needs: get-source
+    runs-on: ubuntu-latest
+    container: 
+      image: docker://ghcr.io/moyshale/clock-action:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      NODE_ENV: gha-test
+    steps:
+      - name: get source
+        uses: actions/checkout@v3
+      - name: pwd
+        run: pwd
+      - name: find
+        run: find .
+#       - name: Docker check
+#         run: ./script/docker-check.sh
+      - name: docker check
+        run: |
+          echo "DOCKER?"
+          (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
+
+          echo "UNAME"
+          uname -a
+
+          echo "ISSUE?"
+          if [[ -f /etc/issue ]]; then
+              echo "Found /etc/issue"
+              cat /etc/issue
+          else
+              echo "Not found /etc/issue"
+          fi
+
+          echo "OS RELEASE?"
+          if [[ -f /etc/os-release ]]; then
+              echo "Found /etc/os-release"
+              cat /etc/os-release
+          else
+              echo "Not found /etc/os-release"
+          fi
+
+  native-job-with-docker-step:
+    needs: get-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: get source
+        uses: actions/checkout@v3
+      - name: Docker check
+        run: ./script/docker-check.sh
+      - name: Docker Check in docker step
+        uses: docker://node:latest
+        with:
+          entrypoint: /bin/echo
+          args: Hello from Docker Step!
+
+  docker-action-clock-step:
+    needs: get-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: get source
+        uses: actions/checkout@v3
+      # adding to see if it solves pull unathorized issue
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker check
+        run: ./script/docker-check.sh
+      - name: Docker Check in docker step
+        id: clock-action
+        uses: docker://ghcr.io/moyshale/clock-action:latest
+        with:
+          action_greeter: ${{inputs.workflow_greeter}}
+      - name: Get the outputs
+        run: |
+          echo "The time was ${{ steps.clock-action.outputs.time }}"
+          echo "The greeter was ${{ steps.clock-action.outputs.greeter }}"
+        
+  docker-action-clock-wrapper:
+    needs: get-source
+    runs-on: ubuntu-latest
+    steps:
+      - name: get source
+        uses: actions/checkout@v3
+      # adding to see if it solves pull unathorized issue
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker check
+        run: ./script/docker-check.sh
+      - name: Docker Check in docker step
+        id: clock-action-wrapper
+        uses: ./.github/actions/clock-action-wrapper
+        with:
+          action_greeter: ${{inputs.workflow_greeter}}
+      - name: Get the outputs
+        run: |
+          echo "The time was ${{ steps.clock-action-wrapper.outputs.time }}"
+          echo "The greeter was ${{ steps.clock-action-wrapper.outputs.greeter }}"

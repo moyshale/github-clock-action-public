@@ -1,0 +1,29 @@
+name: "test docker full url clock-action"
+run-name: "${{ github.actor }} is running git hub action docker full url clock-action"
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_greeter:
+        description: "Workflow Greeter"
+        required: true
+        default: "Default Greeter by Workflow"
+        type: string
+
+jobs:
+  what-time-is-it:
+    runs-on: ubuntu-latest
+    name: A job to call docker time action
+    steps:
+      - name: Dump Inputs
+        run: |
+          echo "workflow_greeter=[${{ inputs.workflow_greeter }}]"
+      - name: call clock-action step
+        uses: moyshale/github-clock-action@main
+        id: clock-action1
+        with:
+          action_greeter: ${{inputs.workflow_greeter}}
+      # Use the output from the `hello` step
+      - name: Get the outputs
+        run: |
+          echo "The time was ${{ steps.clock-action1.outputs.time }}"
+          echo "The greeter was ${{ steps.clock-action1.outputs.greeter }}"

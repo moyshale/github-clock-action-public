@@ -1,0 +1,62 @@
+name: "Build and push clock action"
+run-name: "GitHub Docker Job/Step Demo on ${{ github.actor }}"
+on:
+  workflow_dispatch:
+    inputs:
+      image-tag:
+        description: "image tag to use"
+        required: false
+        default: "latest"
+        type: string
+
+
+env:
+  REGISTRY: ghcr.io
+#   IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/clock-action
+
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Info
+        run: |
+          echo "===INFO==="
+          echo "github.repository [${{ github.repository }}]"
+          echo "github.actor [${{ github.actor }}]"
+          echo "env.REGISTRY [${{ env.REGISTRY }}]"
+          echo "env.IMAGE_NAME [${{ env.IMAGE_NAME }}]"
+          echo "steps.meta.outputs.version [${{ steps.meta.outputs.version }}]"
+          echo "steps.meta.outputs.tags [${{ steps.meta.outputs.tags }}]"
+          echo "steps.meta.outputs.labels [${{ steps.meta.outputs.labels }}]"
+          echo "steps.meta.outputs.json [${{ steps.meta.outputs.json }}]"
+          echo "steps.meta.outputs.bake-file [${{ steps.meta.outputs.bake-file }}]"
+      
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          push: true
+          context: .
+          # tags: user/app:latest
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
